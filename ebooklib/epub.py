@@ -111,12 +111,13 @@ class EpubException(Exception):
 ## Items
 
 class EpubItem(object):
-    def __init__(self, uid=None, file_name='', media_type='', content=''):
+    def __init__(self, uid=None, file_name='', media_type='', content='', manifest=True):
         self.id = uid
         self.file_name = file_name
         self.media_type = media_type
         self.content = content
         self.is_linear = True
+        self.manifest = manifest
 
         self.book = None
 
@@ -603,6 +604,9 @@ class EpubWriter(object):
         # cover-image
 
         for item in self.book.get_items():
+            if not item.manifest:
+                continue
+
             if isinstance(item, EpubNav):
                 etree.SubElement(manifest, 'item', {'href': item.get_name(),
                                                     'id': item.id,
@@ -860,8 +864,10 @@ class EpubWriter(object):
                 self.out.writestr('%s/%s' % (self.book.FOLDER_NAME, item.file_name), self._get_ncx())
             elif isinstance(item, EpubNav):
                 self.out.writestr('%s/%s' % (self.book.FOLDER_NAME, item.file_name), self._get_nav(item))
-            else:
+            elif item.manifest:
                 self.out.writestr('%s/%s' % (self.book.FOLDER_NAME, item.file_name), item.get_content())
+            else:
+                self.out.writestr('%s' % (item.file_name), item.get_content())
 
     def write(self):
         # check for the option allowZip64
